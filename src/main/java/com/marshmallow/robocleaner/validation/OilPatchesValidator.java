@@ -12,10 +12,8 @@ public class OilPatchesValidator implements ConstraintValidator<OilPatches, List
 
     @Override
     public boolean isValid(List<List<Integer>> oilPatches, ConstraintValidatorContext constraintValidatorContext) {
-        if (oilPatches == null || oilPatches.isEmpty()) {
-            return false;
-        }
-
-        return !oilPatches.stream().anyMatch(integers -> integers.size() != 2);
+        // Non-null + Not empty + Pairs + Positive Values
+        return (oilPatches != null) && (!oilPatches.isEmpty()) &&
+               (!oilPatches.stream().anyMatch(integers -> (integers.size() != 2) || (integers.get(0) < 0) || (integers.get(1) < 0)));
     }
 }

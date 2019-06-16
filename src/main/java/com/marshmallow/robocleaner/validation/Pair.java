@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
 @Constraint (validatedBy = PairValidator.class)
 public @interface Pair {
 
-    String message() default "accepted value is a pair of X and Y";
+    String message() default "accepted value is a pair of X and Y (X >= 0 and Y >= 0)";
 
     Class<?>[] groups() default {};
 

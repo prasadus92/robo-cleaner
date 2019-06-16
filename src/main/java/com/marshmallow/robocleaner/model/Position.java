@@ -47,6 +47,6 @@ public class Position implements Validatable {
      */
     @Override
     public boolean isValid() {
-        return (areaSize != null) && (x >= 0) && (x < areaSize.getM()) && (x >= 0) && (y < areaSize.getN());
+        return (areaSize != null) && (x >= 0) && (x < areaSize.getM()) && (y >= 0) && (y < areaSize.getN());
     }
 }

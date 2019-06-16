@@ -1,5 +1,6 @@
 package com.marshmallow.robocleaner.service;
 
+import com.marshmallow.robocleaner.exception.StartingPositionOutOfAreaException;
 import com.marshmallow.robocleaner.model.Area;
 import com.marshmallow.robocleaner.model.Position;
 import com.marshmallow.robocleaner.model.Solution;
@@ -14,20 +15,20 @@ public class RoboCleaner {
     /**
      * Constructor
      *
-     * @param area       Robot is aware of the whole area.
-     * @param position  Initial position of the robot
+     * @param area       Robo Cleaner is aware of the whole area.
+     * @param startingPosition  Initial Position of the Robo Cleaner
      */
-    public RoboCleaner(Area area, Position position) {
+    public RoboCleaner(Area area, Position startingPosition) {
         this.area = area;
-        this.position = position;
-        previousPosition = position;
+        this.position = startingPosition;
+        previousPosition = startingPosition;
         oilPatchesCleaned = 0;
     }
 
     /**
-     * Makes the robot move to a direction
+     * Makes the Robo Cleaner to move to a direction
      *
-     * @param direction  Direction to move towards
+     * @param direction  Direction to move
      */
     private void move(char direction) {
         previousPosition.setLocation(position);
@@ -67,6 +68,9 @@ public class RoboCleaner {
         // Check if initial position needs cleaning
         if (position.isValid()) {
             doClean(position);
+        } else {
+            // ToDo: Maybe we could move this validation to validators instead.
+            throw new StartingPositionOutOfAreaException();
         }
 
         for (int i = 0; i < navigationInstructions.length(); i++) {

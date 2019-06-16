@@ -12,6 +12,6 @@ public class AreaSizeValidator implements ConstraintValidator<AreaSize, List<Int
 
     @Override
     public boolean isValid(List<Integer> values, ConstraintValidatorContext constraintValidatorContext) {
-        return values.size() == 2 && values.get(0) > 0 && values.get(1) > 0;
+        return values != null && values.size() == 2 && values.get(0) > 0 && values.get(1) > 0;
     }
 }

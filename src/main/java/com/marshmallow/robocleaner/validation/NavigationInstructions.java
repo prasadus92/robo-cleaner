@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
 @Constraint (validatedBy = NavigationInstructionsValidator.class)
 public @interface NavigationInstructions {
 
-    String message() default "the accepted characters are N, S, E and W (indicative of directions)";
+    String message() default "the accepted sequence of characters for navigationInstructions are N, S, E and W (indicative of directions)";
 
     Class<?>[] groups() default {};
 

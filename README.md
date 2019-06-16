@@ -82,9 +82,49 @@ We will especially consider:
 
 This test is based on the following gist https://gist.github.com/alirussell/9a519e07128b7eafcb50
 
+## Solution Overview
+
+- The Area is being represented as a Grid of X and Y and the oil patches and cleaner points are marked accordingly.
+- The Robotic Cleaner is made to move on this Grid as per the navigation instructions.
+- Before each move, the resultant X and Y coordinates are checked for validity (being inside the area).
+- If the Robotic Cleaner encounters an Oil Patch upon a move, it will be cleaned from the Area. Meanwhile, we keep track of the number of Oil Patches cleaned by the Robotic Cleaner.
+
 ## Building the Project
+
+Maven is used as the build tool. Use the below command to build the project -
+
+```bash
+mvn clean install
+```
+
+`Dockerfile` is included in the project and hence to build the Docker image, just run -
+
+```bash
+mvn dockerfile:build
+```
 
 ## Running the Project
 
+### Using Maven
+
+It's very easy with Maven here as well, just run the below command -
+
+```bash
+mvn spring-boot:run
+```
+
+### Using Docker Compose
+
+If you have built the Docker image already, use the Docker Compose to run the application. Here is the command to use -
+
+```bash
+docker-compose up
+```
+
 ## Running Tests
 
+In case if you like to run the tests alone, use the below Maven command -
+
+```bash
+mvn clean test
+```

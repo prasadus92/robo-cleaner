@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
 @Constraint (validatedBy = AreaSizeValidator.class)
 public @interface AreaSize {
 
-    String message() default "accepted value is a pair of X and Y (X > 0 & Y > 0)";
+    String message() default "accepted value for areaSize is a pair of X and Y (X > 0 & Y > 0)";
 
     Class<?>[] groups() default {};
 

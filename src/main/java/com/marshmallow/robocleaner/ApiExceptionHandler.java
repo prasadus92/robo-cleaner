@@ -11,6 +11,7 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import com.marshmallow.robocleaner.exception.GenericException;
 import com.marshmallow.robocleaner.exception.OilPatchOutOfAreaException;
+import com.marshmallow.robocleaner.exception.StartingPositionOutOfAreaException;
 import com.marshmallow.robocleaner.model.ErrorDto;
 
 @ControllerAdvice
@@ -27,6 +28,12 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler (OilPatchOutOfAreaException.class)
     public final ResponseEntity<Object> handleOilPatchOutOfGridError(OilPatchOutOfAreaException ex, WebRequest request) {
         log.warn("Handling OilPatchOutOfAreaException: request - {}, error - {}", request.getDescription(false), ex.getMessage());
+        return new ResponseEntity<>(ErrorDto.builder().message(ex.getMessage()).build(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler (StartingPositionOutOfAreaException.class)
+    public final ResponseEntity<Object> handleOilPatchOutOfGridError(StartingPositionOutOfAreaException ex, WebRequest request) {
+        log.warn("Handling StartingPositionOutOfAreaException: request - {}, error - {}", request.getDescription(false), ex.getMessage());
         return new ResponseEntity<>(ErrorDto.builder().message(ex.getMessage()).build(), HttpStatus.BAD_REQUEST);
     }
 

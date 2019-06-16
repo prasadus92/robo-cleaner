@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
 @Constraint (validatedBy = OilPatchesValidator.class)
 public @interface OilPatches {
 
-    String message() default "oilPatches must be a list of X and Y pairs";
+    String message() default "oilPatches must be a list of X and Y pairs (X >= 0 and Y >= 0)";
 
     Class<?>[] groups() default {};
 
