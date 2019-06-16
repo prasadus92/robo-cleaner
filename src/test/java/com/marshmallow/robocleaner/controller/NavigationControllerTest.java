@@ -20,6 +20,10 @@ import static org.hamcrest.CoreMatchers.equalTo;
 @SpringBootTest (webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class NavigationControllerTest {
 
+    private static final String AREA_SIZE_VALIDATION_ERROR = "accepted value for areaSize is a pair of X and Y (X > 0 & Y > 0)";
+    private static final String NAVIGATION_INSTRUCTIONS_VALIDATION_ERROR =
+        "the accepted sequence of characters for navigationInstructions are N, S, E and W (indicative of directions)";
+
     @LocalServerPort
     protected int port;
 
@@ -51,7 +55,7 @@ public class NavigationControllerTest {
             .post("api/v1/robocleaner/navigation")
             .then()
             .statusCode(HttpStatus.SC_BAD_REQUEST)
-            .body("message", containsString("accepted value for areaSize is a pair of X and Y (X > 0 & Y > 0)"));
+            .body("message", containsString(AREA_SIZE_VALIDATION_ERROR));
         //@formatter:on
 
         //language=JSON
@@ -74,7 +78,7 @@ public class NavigationControllerTest {
             .post("api/v1/robocleaner/navigation")
             .then()
             .statusCode(HttpStatus.SC_BAD_REQUEST)
-            .body("message", containsString("accepted value for areaSize is a pair of X and Y (X > 0 & Y > 0)"));
+            .body("message", containsString(AREA_SIZE_VALIDATION_ERROR));
         //@formatter:on
     }
 
@@ -204,7 +208,7 @@ public class NavigationControllerTest {
             .post("api/v1/robocleaner/navigation")
             .then()
             .statusCode(HttpStatus.SC_BAD_REQUEST)
-            .body("message", containsString("the accepted sequence of characters for navigationInstructions are N, S, E and W (indicative of directions)"));
+            .body("message", containsString(NAVIGATION_INSTRUCTIONS_VALIDATION_ERROR));
         //@formatter:on
     }
 
@@ -283,7 +287,7 @@ public class NavigationControllerTest {
             .post("api/v1/robocleaner/navigation")
             .then()
             .statusCode(HttpStatus.SC_BAD_REQUEST)
-            .body("message", containsString("accepted value for areaSize is a pair of X and Y (X > 0 & Y > 0)"));
+            .body("message", containsString(AREA_SIZE_VALIDATION_ERROR));
         //@formatter:on
     }
 
@@ -354,7 +358,7 @@ public class NavigationControllerTest {
             .post("api/v1/robocleaner/navigation")
             .then()
             .statusCode(HttpStatus.SC_BAD_REQUEST)
-            .body("message", containsString("the accepted sequence of characters for navigationInstructions are N, S, E and W (indicative of directions)"));
+            .body("message", containsString(NAVIGATION_INSTRUCTIONS_VALIDATION_ERROR));
         //@formatter:on
     }
 
@@ -380,7 +384,7 @@ public class NavigationControllerTest {
             .post("api/v1/robocleaner/navigation")
             .then()
             .statusCode(HttpStatus.SC_BAD_REQUEST)
-            .body("message", containsString("the accepted sequence of characters for navigationInstructions are N, S, E and W (indicative of directions)"));
+            .body("message", containsString(NAVIGATION_INSTRUCTIONS_VALIDATION_ERROR));
         //@formatter:on
     }
 

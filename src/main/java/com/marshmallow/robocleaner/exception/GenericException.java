@@ -2,7 +2,7 @@ package com.marshmallow.robocleaner.exception;
 
 public class GenericException extends RuntimeException {
 
-    private static String oilPatchIndexString = " - oil patch index: ";
+    private static final String oilPatchIndexString = " - oil patch index: ";
 
     public GenericException(String message) {
         super(message);

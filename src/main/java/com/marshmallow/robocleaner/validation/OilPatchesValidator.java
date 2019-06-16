@@ -6,11 +6,6 @@ import java.util.List;
 
 public class OilPatchesValidator implements ConstraintValidator<OilPatches, List<List<Integer>>> {
     @Override
-    public void initialize(OilPatches constraintAnnotation) {
-
-    }
-
-    @Override
     public boolean isValid(List<List<Integer>> oilPatches, ConstraintValidatorContext constraintValidatorContext) {
         // Non-null + Not empty + Pairs + Positive Values
         return (oilPatches != null) && (!oilPatches.isEmpty()) &&
