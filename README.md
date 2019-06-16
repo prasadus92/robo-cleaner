@@ -84,7 +84,7 @@ This test is based on the following gist https://gist.github.com/alirussell/9a51
 
 ## Solution Overview
 
-- The Area is being represented as a Grid of X and Y and the oil patches and cleaner points are marked accordingly.
+- The Area is being represented as a Grid of X and Y and the oil patches and clean points are marked accordingly.
 - The Robotic Cleaner is made to move on this Grid as per the navigation instructions.
 - Before each move, the resultant X and Y coordinates are checked for validity (being inside the area).
 - If the Robotic Cleaner encounters an Oil Patch upon a move, it will be cleaned from the Area. Meanwhile, we keep track of the number of Oil Patches cleaned by the Robotic Cleaner.
