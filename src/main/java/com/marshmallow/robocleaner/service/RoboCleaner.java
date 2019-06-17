@@ -59,7 +59,7 @@ public class RoboCleaner {
     }
 
     /**
-     * Goes through the navigation instructions and checks for dirts to clean.
+     * Goes through the navigation instructions and checks for oil patches to clean.
      *
      * @param  navigationInstructions  Our instructions
      * @return Solution             The solution of our current run
@@ -81,9 +81,9 @@ public class RoboCleaner {
     }
 
     /**
-     * Cleans dirt on a specific position
+     * Cleans oil patch on a specific position
      *
-     * @param position  Position with potential dirt to be cleaned
+     * @param position  Position with potential oil patch to be cleaned
      */
     private void doClean(Position position) {
         if (area.hasOilPatch(position)) {
