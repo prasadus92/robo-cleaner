@@ -1,36 +1,73 @@
 package com.marshmallow.robocleaner.service;
 
-import lombok.extern.slf4j.Slf4j;
+import com.marshmallow.robocleaner.api.NavigationRequest;
+import com.marshmallow.robocleaner.api.NavigationResponse;
+import com.marshmallow.robocleaner.domain.CleaningArea;
+import com.marshmallow.robocleaner.domain.CleaningResult;
+import com.marshmallow.robocleaner.domain.RoboticCleaner;
+import com.marshmallow.robocleaner.exception.OilPatchOutOfBoundsException;
+import com.marshmallow.robocleaner.exception.StartingPositionOutOfBoundsException;
+import com.marshmallow.robocleaner.model.Coordinate;
+import com.marshmallow.robocleaner.model.Dimensions;
+import io.micrometer.core.annotation.Timed;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import com.marshmallow.robocleaner.model.*;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.IntStream;
-
+/**
+ * Service layer for handling navigation operations.
+ * Orchestrates the cleaning simulation process.
+ */
 @Service
-@Slf4j
 public class NavigationService {
 
-    public Optional<Solution> navigate(Instructions instructions) {
-        AreaSize areaSize = new AreaSize(instructions.getAreaSize());
-        Area area = new Area(areaSize);
-        Position startingPosition = new Position(instructions.getStartingPosition(), areaSize);
+    private static final Logger log = LoggerFactory.getLogger(NavigationService.class);
 
-        List<List<Integer>> oilPatches = instructions.getOilPatches();
-        IntStream.range(0, oilPatches.size())
-                 .forEach(index -> area.applyOilPatch(oilPatches.get(index), index));
+    /**
+     * Execute a navigation operation based on the given request.
+     *
+     * @param request the navigation request containing all input parameters
+     * @return the navigation response with the result
+     * @throws StartingPositionOutOfBoundsException if the starting position is outside the area
+     * @throws OilPatchOutOfBoundsException        if any oil patch is outside the area
+     */
+    @Timed(value = "navigation.execute", description = "Time taken to execute navigation")
+    public NavigationResponse navigate(NavigationRequest request) {
+        log.info("Processing navigation request: areaSize={}, startingPosition={}, oilPatches={}, instructionsLength={}",
+                request.areaSize(),
+                request.startingPosition(),
+                request.oilPatches().size(),
+                request.navigationInstructions().length());
 
-        log.info("Running the Robo Cleaner...");
-        RoboCleaner roboCleaner = new RoboCleaner(area, startingPosition);
-        Solution solution = roboCleaner.clean(instructions.getNavigationInstructions());
+        // Create the cleaning area
+        Dimensions dimensions = Dimensions.fromList(request.areaSize());
+        CleaningArea area = new CleaningArea(dimensions);
 
-        if (solution == null) {
-            log.error("Error encountered during the navigation. No solution found.");
-            return Optional.empty();
+        // Parse starting position
+        Coordinate startingPosition = Coordinate.fromList(request.startingPosition());
+
+        // Validate starting position is within bounds
+        if (!area.isWithinBounds(startingPosition)) {
+            throw new StartingPositionOutOfBoundsException(startingPosition, dimensions);
         }
 
-        log.info("Robo Cleaner finished the navigation successfully.");
-        return Optional.of(solution);
+        // Apply oil patches
+        try {
+            area.applyOilPatches(request.oilPatches());
+        } catch (IllegalArgumentException e) {
+            throw new OilPatchOutOfBoundsException(e.getMessage());
+        }
+
+        // Execute the navigation
+        RoboticCleaner cleaner = new RoboticCleaner(area, startingPosition);
+        CleaningResult result = cleaner.executeNavigation(request.navigationInstructions());
+
+        log.info("Navigation completed: finalPosition={}, oilPatchesCleaned={}",
+                result.finalPosition(), result.oilPatchesCleaned());
+
+        return new NavigationResponse(
+                result.finalPosition().toList(),
+                result.oilPatchesCleaned()
+        );
     }
 }

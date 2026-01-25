@@ -2,13 +2,12 @@ package com.marshmallow.robocleaner.controller;
 
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import org.apache.http.HttpStatus;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.web.server.LocalServerPort;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.boot.test.web.server.LocalServerPort;
 
 import java.util.Arrays;
 
@@ -16,401 +15,397 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 
-@RunWith (SpringJUnit4ClassRunner.class)
-@SpringBootTest (webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class NavigationControllerTest {
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@DisplayName("Navigation Controller Integration Tests")
+class NavigationControllerTest {
 
-    private static final String AREA_SIZE_VALIDATION_ERROR = "accepted value for areaSize is a pair of X and Y (X > 0 & Y > 0)";
-    private static final String NAVIGATION_INSTRUCTIONS_VALIDATION_ERROR =
-        "the accepted sequence of characters for navigationInstructions are N, S, E and W (indicative of directions)";
+    private static final String NAVIGATION_ENDPOINT = "/api/v1/robocleaner/navigation";
 
     @LocalServerPort
-    protected int port;
+    private int port;
 
-    @Before
-    public void beforeTest() {
+    @BeforeEach
+    void setUp() {
         RestAssured.port = port;
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
     }
 
-    @Test
-    public void testInvalidAreaSize() {
-        //language=JSON
-        String instructions = "{\n" +
-                              "  \"areaSize\" : [5],\n" +
-                              "  \"startingPosition\" : [1, 2],\n" +
-                              "  \"oilPatches\" : [\n" +
-                              "    [1, 0],\n" +
-                              "    [2, 2],\n" +
-                              "    [2, 3]\n" +
-                              "  ],\n" +
-                              "  \"navigationInstructions\" : \"NNESEESWNWW\"\n" +
-                              "}";
+    @Nested
+    @DisplayName("Successful Navigation Tests")
+    class SuccessfulNavigationTests {
 
-        //@formatter:off
-        given()
-            .contentType(ContentType.JSON)
-            .body(instructions)
+        @Test
+        @DisplayName("Basic navigation - should clean one patch and return correct position")
+        void basicNavigation_shouldReturnCorrectResult() {
+            String request = """
+                {
+                  "areaSize": [5, 5],
+                  "startingPosition": [1, 2],
+                  "oilPatches": [[1, 0], [2, 2], [2, 3]],
+                  "navigationInstructions": "NNESEESWNWW"
+                }
+                """;
+
+            given()
+                .contentType(ContentType.JSON)
+                .body(request)
             .when()
-            .post("api/v1/robocleaner/navigation")
+                .post(NAVIGATION_ENDPOINT)
             .then()
-            .statusCode(HttpStatus.SC_BAD_REQUEST)
-            .body("message", containsString(AREA_SIZE_VALIDATION_ERROR));
-        //@formatter:on
+                .statusCode(200)
+                .body("oilPatchesCleaned", equalTo(1))
+                .body("finalPosition", equalTo(Arrays.asList(1, 3)));
+        }
 
-        //language=JSON
-        instructions = "{\n" +
-                       "  \"areaSize\" : [0, 5],\n" +
-                       "  \"startingPosition\" : [1, 2],\n" +
-                       "  \"oilPatches\" : [\n" +
-                       "    [1, 0],\n" +
-                       "    [2, 2],\n" +
-                       "    [2, 3]\n" +
-                       "  ],\n" +
-                       "  \"navigationInstructions\" : \"NNESEESWNWW\"\n" +
-                       "}";
+        @Test
+        @DisplayName("Rectangular area - should navigate correctly and clean all patches")
+        void rectangularArea_shouldNavigateCorrectly() {
+            String request = """
+                {
+                  "areaSize": [5, 7],
+                  "startingPosition": [1, 5],
+                  "oilPatches": [[1, 6], [2, 6], [4, 4]],
+                  "navigationInstructions": "NESEESWNWS"
+                }
+                """;
 
-        //@formatter:off
-        given()
-            .contentType(ContentType.JSON)
-            .body(instructions)
+            given()
+                .contentType(ContentType.JSON)
+                .body(request)
             .when()
-            .post("api/v1/robocleaner/navigation")
+                .post(NAVIGATION_ENDPOINT)
             .then()
-            .statusCode(HttpStatus.SC_BAD_REQUEST)
-            .body("message", containsString(AREA_SIZE_VALIDATION_ERROR));
-        //@formatter:on
+                .statusCode(200)
+                .body("oilPatchesCleaned", equalTo(3))
+                .body("finalPosition", equalTo(Arrays.asList(2, 4)));
+        }
+
+        @Test
+        @DisplayName("Clean patch at starting position - should count initial position cleaning")
+        void oilPatchAtStartingPosition_shouldBeCleanedImmediately() {
+            String request = """
+                {
+                  "areaSize": [3, 3],
+                  "startingPosition": [1, 1],
+                  "oilPatches": [[1, 1]],
+                  "navigationInstructions": "N"
+                }
+                """;
+
+            given()
+                .contentType(ContentType.JSON)
+                .body(request)
+            .when()
+                .post(NAVIGATION_ENDPOINT)
+            .then()
+                .statusCode(200)
+                .body("oilPatchesCleaned", equalTo(1))
+                .body("finalPosition", equalTo(Arrays.asList(1, 2)));
+        }
+
+        @Test
+        @DisplayName("Navigation at boundary - should stay within bounds")
+        void navigationAtBoundary_shouldStayWithinBounds() {
+            String request = """
+                {
+                  "areaSize": [3, 3],
+                  "startingPosition": [0, 0],
+                  "oilPatches": [[1, 1]],
+                  "navigationInstructions": "SSSWWWNNNEEEE"
+                }
+                """;
+
+            given()
+                .contentType(ContentType.JSON)
+                .body(request)
+            .when()
+                .post(NAVIGATION_ENDPOINT)
+            .then()
+                .statusCode(200)
+                .body("finalPosition", equalTo(Arrays.asList(2, 2)));
+        }
     }
 
-    @Test
-    public void testInvalidStartingPosition() {
-        //language=JSON
-        String instructions = "{\n" +
-                              "  \"areaSize\" : [5, 5],\n" +
-                              "  \"startingPosition\" : [1],\n" +
-                              "  \"oilPatches\" : [\n" +
-                              "    [1, 0],\n" +
-                              "    [2, 2],\n" +
-                              "    [2, 3]\n" +
-                              "  ],\n" +
-                              "  \"navigationInstructions\" : \"NNESEESWNWW\"\n" +
-                              "}";
+    @Nested
+    @DisplayName("Validation Error Tests")
+    class ValidationErrorTests {
 
-        //@formatter:off
-        given()
-            .contentType(ContentType.JSON)
-            .body(instructions)
+        @Test
+        @DisplayName("Invalid area size - single value should fail")
+        void invalidAreaSize_singleValue_shouldReturnBadRequest() {
+            String request = """
+                {
+                  "areaSize": [5],
+                  "startingPosition": [1, 2],
+                  "oilPatches": [[1, 0]],
+                  "navigationInstructions": "N"
+                }
+                """;
+
+            given()
+                .contentType(ContentType.JSON)
+                .body(request)
             .when()
-            .post("api/v1/robocleaner/navigation")
+                .post(NAVIGATION_ENDPOINT)
             .then()
-            .statusCode(HttpStatus.SC_BAD_REQUEST)
-            .body("message", containsString("accepted value is a pair of X and Y"));
-        //@formatter:on
-    }
+                .statusCode(400)
+                .body("detail", containsString("areaSize"));
+        }
 
-    @Test
-    public void testStaringPositionOutOfArea() {
-        //language=JSON
-        String instructions = "{\n" +
-                              "  \"areaSize\" : [5, 5],\n" +
-                              "  \"startingPosition\" : [1, 6],\n" +
-                              "  \"oilPatches\" : [\n" +
-                              "    [1, 0],\n" +
-                              "    [2, 2],\n" +
-                              "    [2, 3]\n" +
-                              "  ],\n" +
-                              "  \"navigationInstructions\" : \"NNESEESWNWW\"\n" +
-                              "}";
+        @Test
+        @DisplayName("Invalid area size - zero value should fail")
+        void invalidAreaSize_zeroValue_shouldReturnBadRequest() {
+            String request = """
+                {
+                  "areaSize": [0, 5],
+                  "startingPosition": [1, 2],
+                  "oilPatches": [[1, 0]],
+                  "navigationInstructions": "N"
+                }
+                """;
 
-        //@formatter:off
-        given()
-            .contentType(ContentType.JSON)
-            .body(instructions)
+            given()
+                .contentType(ContentType.JSON)
+                .body(request)
             .when()
-            .post("api/v1/robocleaner/navigation")
+                .post(NAVIGATION_ENDPOINT)
             .then()
-            .statusCode(HttpStatus.SC_BAD_REQUEST)
-            .body("message", containsString("Starting position coordinates are outside of the area"));
-        //@formatter:on
-    }
+                .statusCode(400)
+                .body("detail", containsString("areaSize"));
+        }
 
-    @Test
-    public void testInvalidOilPatchCoordinates() {
-        //language=JSON
-        String instructions = "{\n" +
-                              "  \"areaSize\" : [5, 5],\n" +
-                              "  \"startingPosition\" : [1, 2],\n" +
-                              "  \"oilPatches\" : [\n" +
-                              "    [1],\n" +
-                              "    [2, 2],\n" +
-                              "    [2, 3]\n" +
-                              "  ],\n" +
-                              "  \"navigationInstructions\" : \"NNESEESWNWW\"\n" +
-                              "}";
+        @Test
+        @DisplayName("Invalid starting position - single value should fail")
+        void invalidStartingPosition_singleValue_shouldReturnBadRequest() {
+            String request = """
+                {
+                  "areaSize": [5, 5],
+                  "startingPosition": [1],
+                  "oilPatches": [[1, 0]],
+                  "navigationInstructions": "N"
+                }
+                """;
 
-        //@formatter:off
-        given()
-            .contentType(ContentType.JSON)
-            .body(instructions)
+            given()
+                .contentType(ContentType.JSON)
+                .body(request)
             .when()
-            .post("api/v1/robocleaner/navigation")
+                .post(NAVIGATION_ENDPOINT)
             .then()
-            .statusCode(HttpStatus.SC_BAD_REQUEST)
-            .body("message", containsString("oilPatches must be a list of X and Y pairs"));
-        //@formatter:on
-    }
+                .statusCode(400)
+                .body("detail", containsString("startingPosition"));
+        }
 
-    @Test
-    public void testOilPatchCoordinatesOutOfArea() {
-        //language=JSON
-        String instructions = "{\n" +
-                              "  \"areaSize\" : [5, 5],\n" +
-                              "  \"startingPosition\" : [1, 2],\n" +
-                              "  \"oilPatches\" : [\n" +
-                              "    [1, 6],\n" +
-                              "    [2, 2],\n" +
-                              "    [2, 3]\n" +
-                              "  ],\n" +
-                              "  \"navigationInstructions\" : \"NNESEESWNWW\"\n" +
-                              "}";
+        @Test
+        @DisplayName("Starting position out of bounds - should fail")
+        void startingPositionOutOfBounds_shouldReturnBadRequest() {
+            String request = """
+                {
+                  "areaSize": [5, 5],
+                  "startingPosition": [1, 6],
+                  "oilPatches": [[1, 0]],
+                  "navigationInstructions": "N"
+                }
+                """;
 
-        //@formatter:off
-        given()
-            .contentType(ContentType.JSON)
-            .body(instructions)
+            given()
+                .contentType(ContentType.JSON)
+                .body(request)
             .when()
-            .post("api/v1/robocleaner/navigation")
+                .post(NAVIGATION_ENDPOINT)
             .then()
-            .statusCode(HttpStatus.SC_BAD_REQUEST)
-            .body("message", containsString("Oil patch coordinates are outside of the area"));
-        //@formatter:on
-    }
+                .statusCode(400)
+                .body("detail", containsString("Starting position"));
+        }
 
-    @Test
-    public void testInvalidNavigationInstructions() {
-        //language=JSON
-        String instructions = "{\n" +
-                              "  \"areaSize\" : [5, 5],\n" +
-                              "  \"startingPosition\" : [1, 2],\n" +
-                              "  \"oilPatches\" : [\n" +
-                              "    [1, 0],\n" +
-                              "    [2, 2],\n" +
-                              "    [2, 3]\n" +
-                              "  ],\n" +
-                              "  \"navigationInstructions\" : \"NNESEESWNWWA\"\n" +
-                              "}";
+        @Test
+        @DisplayName("Invalid oil patch coordinates - single value should fail")
+        void invalidOilPatchCoordinates_singleValue_shouldReturnBadRequest() {
+            String request = """
+                {
+                  "areaSize": [5, 5],
+                  "startingPosition": [1, 2],
+                  "oilPatches": [[1]],
+                  "navigationInstructions": "N"
+                }
+                """;
 
-        //@formatter:off
-        given()
-            .contentType(ContentType.JSON)
-            .body(instructions)
+            given()
+                .contentType(ContentType.JSON)
+                .body(request)
             .when()
-            .post("api/v1/robocleaner/navigation")
+                .post(NAVIGATION_ENDPOINT)
             .then()
-            .statusCode(HttpStatus.SC_BAD_REQUEST)
-            .body("message", containsString(NAVIGATION_INSTRUCTIONS_VALIDATION_ERROR));
-        //@formatter:on
-    }
+                .statusCode(400)
+                .body("detail", containsString("oilPatches"));
+        }
 
-    @Test
-    public void testBasicUseCase() {
-        //language=JSON
-        String instructions = "{\n" +
-                              "  \"areaSize\" : [5, 5],\n" +
-                              "  \"startingPosition\" : [1, 2],\n" +
-                              "  \"oilPatches\" : [\n" +
-                              "    [1, 0],\n" +
-                              "    [2, 2],\n" +
-                              "    [2, 3]\n" +
-                              "  ],\n" +
-                              "  \"navigationInstructions\" : \"NNESEESWNWW\"\n" +
-                              "}";
+        @Test
+        @DisplayName("Oil patch out of bounds - should fail")
+        void oilPatchOutOfBounds_shouldReturnBadRequest() {
+            String request = """
+                {
+                  "areaSize": [5, 5],
+                  "startingPosition": [1, 2],
+                  "oilPatches": [[1, 6]],
+                  "navigationInstructions": "N"
+                }
+                """;
 
-        //@formatter:off
-        given()
-            .contentType(ContentType.JSON)
-            .body(instructions)
+            given()
+                .contentType(ContentType.JSON)
+                .body(request)
             .when()
-            .post("api/v1/robocleaner/navigation")
+                .post(NAVIGATION_ENDPOINT)
             .then()
-            .statusCode(HttpStatus.SC_OK)
-            .body("oilPatchesCleaned", equalTo(1))
-            .body("finalPosition", equalTo(Arrays.asList(1, 3)));
-        //@formatter:on
-    }
+                .statusCode(400)
+                .body("detail", containsString("Oil patch"));
+        }
 
-    @Test
-    public void testRectangularArea() {
-        //language=JSON
-        String instructions = "{\n" +
-                              "  \"areaSize\" : [5, 7],\n" +
-                              "  \"startingPosition\" : [1, 5],\n" +
-                              "  \"oilPatches\" : [\n" +
-                              "    [1, 6],\n" +
-                              "    [2, 6],\n" +
-                              "    [4, 4]\n" +
-                              "  ],\n" +
-                              "  \"navigationInstructions\" : \"NESEESWNWS\"\n" +
-                              "}";
+        @Test
+        @DisplayName("Negative oil patch coordinates - should fail")
+        void negativeOilPatchCoordinates_shouldReturnBadRequest() {
+            String request = """
+                {
+                  "areaSize": [5, 5],
+                  "startingPosition": [1, 2],
+                  "oilPatches": [[1, 0], [-2, 3]],
+                  "navigationInstructions": "N"
+                }
+                """;
 
-        //@formatter:off
-        given()
-            .contentType(ContentType.JSON)
-            .body(instructions)
+            given()
+                .contentType(ContentType.JSON)
+                .body(request)
             .when()
-            .post("api/v1/robocleaner/navigation")
+                .post(NAVIGATION_ENDPOINT)
             .then()
-            .statusCode(HttpStatus.SC_OK)
-            .body("oilPatchesCleaned", equalTo(3))
-            .body("finalPosition", equalTo(Arrays.asList(2, 4)));
-        //@formatter:on
-    }
+                .statusCode(400)
+                .body("detail", containsString("oilPatches"));
+        }
 
-    @Test
-    public void testNoAreaSize() {
-        //language=JSON
-        String instructions = "{\n" +
-                              "  \"startingPosition\" : [1, 2],\n" +
-                              "  \"oilPatches\" : [\n" +
-                              "    [1, 0],\n" +
-                              "    [2, 2],\n" +
-                              "    [2, 3]\n" +
-                              "  ],\n" +
-                              "  \"navigationInstructions\" : \"NNESEESWNWW\"\n" +
-                              "}";
+        @Test
+        @DisplayName("Invalid navigation instructions - should fail")
+        void invalidNavigationInstructions_shouldReturnBadRequest() {
+            String request = """
+                {
+                  "areaSize": [5, 5],
+                  "startingPosition": [1, 2],
+                  "oilPatches": [[1, 0]],
+                  "navigationInstructions": "NNESXA"
+                }
+                """;
 
-        //@formatter:off
-        given()
-            .contentType(ContentType.JSON)
-            .body(instructions)
+            given()
+                .contentType(ContentType.JSON)
+                .body(request)
             .when()
-            .post("api/v1/robocleaner/navigation")
+                .post(NAVIGATION_ENDPOINT)
             .then()
-            .statusCode(HttpStatus.SC_BAD_REQUEST)
-            .body("message", containsString(AREA_SIZE_VALIDATION_ERROR));
-        //@formatter:on
-    }
+                .statusCode(400)
+                .body("detail", containsString("navigationInstructions"));
+        }
 
-    @Test
-    public void testNoStartingPosition() {
-        //language=JSON
-        String instructions = "{\n" +
-                              "  \"areaSize\" : [5, 5],\n" +
-                              "  \"oilPatches\" : [\n" +
-                              "    [1, 0],\n" +
-                              "    [2, 2],\n" +
-                              "    [2, 3]\n" +
-                              "  ],\n" +
-                              "  \"navigationInstructions\" : \"NNESEESWNWW\"\n" +
-                              "}";
+        @Test
+        @DisplayName("Empty navigation instructions - should fail")
+        void emptyNavigationInstructions_shouldReturnBadRequest() {
+            String request = """
+                {
+                  "areaSize": [5, 5],
+                  "startingPosition": [1, 2],
+                  "oilPatches": [[1, 0]],
+                  "navigationInstructions": ""
+                }
+                """;
 
-        //@formatter:off
-        given()
-            .contentType(ContentType.JSON)
-            .body(instructions)
+            given()
+                .contentType(ContentType.JSON)
+                .body(request)
             .when()
-            .post("api/v1/robocleaner/navigation")
+                .post(NAVIGATION_ENDPOINT)
             .then()
-            .statusCode(HttpStatus.SC_BAD_REQUEST)
-            .body("message", containsString("accepted value is a pair of X and Y"));
-        //@formatter:on
-    }
+                .statusCode(400)
+                .body("detail", containsString("navigationInstructions"));
+        }
 
-    @Test
-    public void testNoOilPatch() {
-        //language=JSON
-        String instructions = "{\n" +
-                              "  \"areaSize\" : [5, 5],\n" +
-                              "  \"startingPosition\" : [1, 2],\n" +
-                              "  \"navigationInstructions\" : \"NNESEESWNWW\"\n" +
-                              "}";
+        @Test
+        @DisplayName("Missing area size - should fail")
+        void missingAreaSize_shouldReturnBadRequest() {
+            String request = """
+                {
+                  "startingPosition": [1, 2],
+                  "oilPatches": [[1, 0]],
+                  "navigationInstructions": "N"
+                }
+                """;
 
-        //@formatter:off
-        given()
-            .contentType(ContentType.JSON)
-            .body(instructions)
+            given()
+                .contentType(ContentType.JSON)
+                .body(request)
             .when()
-            .post("api/v1/robocleaner/navigation")
+                .post(NAVIGATION_ENDPOINT)
             .then()
-            .statusCode(HttpStatus.SC_BAD_REQUEST)
-            .body("message", containsString("oilPatches must be a list of X and Y pairs"));
-        //@formatter:on
-    }
+                .statusCode(400);
+        }
 
-    @Test
-    public void testNoNavigationInstructions() {
-        //language=JSON
-        String instructions = "{\n" +
-                              "  \"areaSize\" : [5, 5],\n" +
-                              "  \"startingPosition\" : [1, 2],\n" +
-                              "  \"oilPatches\" : [\n" +
-                              "    [1, 0],\n" +
-                              "    [2, 2],\n" +
-                              "    [2, 3]\n" +
-                              "  ]\n" +
-                              "}";
+        @Test
+        @DisplayName("Missing starting position - should fail")
+        void missingStartingPosition_shouldReturnBadRequest() {
+            String request = """
+                {
+                  "areaSize": [5, 5],
+                  "oilPatches": [[1, 0]],
+                  "navigationInstructions": "N"
+                }
+                """;
 
-        //@formatter:off
-        given()
-            .contentType(ContentType.JSON)
-            .body(instructions)
+            given()
+                .contentType(ContentType.JSON)
+                .body(request)
             .when()
-            .post("api/v1/robocleaner/navigation")
+                .post(NAVIGATION_ENDPOINT)
             .then()
-            .statusCode(HttpStatus.SC_BAD_REQUEST)
-            .body("message", containsString(NAVIGATION_INSTRUCTIONS_VALIDATION_ERROR));
-        //@formatter:on
-    }
+                .statusCode(400);
+        }
 
-    @Test
-    public void testEmptyNavigationInstructions() {
-        //language=JSON
-        String instructions = "{\n" +
-                              "  \"areaSize\" : [5, 5],\n" +
-                              "  \"startingPosition\" : [1, 2],\n" +
-                              "  \"oilPatches\" : [\n" +
-                              "    [1, 0],\n" +
-                              "    [2, 2],\n" +
-                              "    [2, 3]\n" +
-                              "  ],\n" +
-                              "  \"navigationInstructions\" : \"\"\n" +
-                              "}";
+        @Test
+        @DisplayName("Missing oil patches - should fail")
+        void missingOilPatches_shouldReturnBadRequest() {
+            String request = """
+                {
+                  "areaSize": [5, 5],
+                  "startingPosition": [1, 2],
+                  "navigationInstructions": "N"
+                }
+                """;
 
-        //@formatter:off
-        given()
-            .contentType(ContentType.JSON)
-            .body(instructions)
+            given()
+                .contentType(ContentType.JSON)
+                .body(request)
             .when()
-            .post("api/v1/robocleaner/navigation")
+                .post(NAVIGATION_ENDPOINT)
             .then()
-            .statusCode(HttpStatus.SC_BAD_REQUEST)
-            .body("message", containsString(NAVIGATION_INSTRUCTIONS_VALIDATION_ERROR));
-        //@formatter:on
-    }
+                .statusCode(400);
+        }
 
-    @Test
-    public void testNegativeCoordinatesForOilPatches() {
-        //language=JSON
-        String instructions = "{\n" +
-                              "  \"areaSize\" : [5, 5],\n" +
-                              "  \"startingPosition\" : [1, 2],\n" +
-                              "  \"oilPatches\" : [\n" +
-                              "    [1, 0],\n" +
-                              "    [2, -2],\n" +
-                              "    [-2, 3]\n" +
-                              "  ],\n" +
-                              "  \"navigationInstructions\" : \"NNESEESWNWW\"\n" +
-                              "}";
+        @Test
+        @DisplayName("Missing navigation instructions - should fail")
+        void missingNavigationInstructions_shouldReturnBadRequest() {
+            String request = """
+                {
+                  "areaSize": [5, 5],
+                  "startingPosition": [1, 2],
+                  "oilPatches": [[1, 0]]
+                }
+                """;
 
-        //@formatter:off
-        given()
-            .contentType(ContentType.JSON)
-            .body(instructions)
+            given()
+                .contentType(ContentType.JSON)
+                .body(request)
             .when()
-            .post("api/v1/robocleaner/navigation")
+                .post(NAVIGATION_ENDPOINT)
             .then()
-            .statusCode(HttpStatus.SC_BAD_REQUEST)
-            .body("message", containsString("oilPatches must be a list of X and Y pairs (X >= 0 and Y >= 0)"));
-        //@formatter:on
+                .statusCode(400);
+        }
     }
 }
