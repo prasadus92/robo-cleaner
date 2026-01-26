@@ -1,47 +1,29 @@
 package com.marshmallow.robocleaner.controller;
 
-import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Arrays;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.Matchers.notNullValue;
-
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest
+@AutoConfigureMockMvc
 @DisplayName("Navigation Controller Integration Tests")
 class NavigationControllerTest {
 
     private static final String NAVIGATION_ENDPOINT = "/api/v1/robocleaner/navigation";
 
-    @LocalServerPort
-    private int port;
-
-    @BeforeEach
-    void setUp() {
-        RestAssured.port = port;
-        RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
-    }
+    @Autowired
+    private MockMvc mockMvc;
 
     @Test
-    @DisplayName("Health check - actuator should respond")
-    void healthCheck_shouldRespond() {
-        given()
-        .when()
-            .get("/actuator/health")
-        .then()
-            .statusCode(200);
-    }
-
-    @Test
-    @DisplayName("Basic navigation - should return 200 with valid response")
-    void basicNavigation_shouldReturnCorrectResult() {
+    @DisplayName("Basic navigation - should return 200 with correct result")
+    void basicNavigation_shouldReturnCorrectResult() throws Exception {
         String request = """
             {
               "areaSize": [5, 5],
@@ -51,21 +33,18 @@ class NavigationControllerTest {
             }
             """;
 
-        given()
-            .contentType(ContentType.JSON)
-            .body(request)
-        .when()
-            .post(NAVIGATION_ENDPOINT)
-        .then()
-            .statusCode(200)
-            .body("finalPosition", notNullValue())
-            .body("oilPatchesCleaned", equalTo(1))
-            .body("finalPosition", equalTo(Arrays.asList(1, 3)));
+        mockMvc.perform(post(NAVIGATION_ENDPOINT)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(request))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.oilPatchesCleaned").value(1))
+            .andExpect(jsonPath("$.finalPosition[0]").value(1))
+            .andExpect(jsonPath("$.finalPosition[1]").value(3));
     }
 
     @Test
-    @DisplayName("Invalid request - should return 400")
-    void invalidRequest_shouldReturnBadRequest() {
+    @DisplayName("Invalid area size - should return 400")
+    void invalidAreaSize_shouldReturnBadRequest() throws Exception {
         String request = """
             {
               "areaSize": [5],
@@ -75,12 +54,62 @@ class NavigationControllerTest {
             }
             """;
 
-        given()
-            .contentType(ContentType.JSON)
-            .body(request)
-        .when()
-            .post(NAVIGATION_ENDPOINT)
-        .then()
-            .statusCode(400);
+        mockMvc.perform(post(NAVIGATION_ENDPOINT)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(request))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Invalid navigation instructions - should return 400")
+    void invalidNavigationInstructions_shouldReturnBadRequest() throws Exception {
+        String request = """
+            {
+              "areaSize": [5, 5],
+              "startingPosition": [1, 2],
+              "oilPatches": [[1, 0]],
+              "navigationInstructions": "NNESXA"
+            }
+            """;
+
+        mockMvc.perform(post(NAVIGATION_ENDPOINT)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(request))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Starting position out of bounds - should return 400")
+    void startingPositionOutOfBounds_shouldReturnBadRequest() throws Exception {
+        String request = """
+            {
+              "areaSize": [5, 5],
+              "startingPosition": [1, 6],
+              "oilPatches": [[1, 0]],
+              "navigationInstructions": "N"
+            }
+            """;
+
+        mockMvc.perform(post(NAVIGATION_ENDPOINT)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(request))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Missing required field - should return 400")
+    void missingOilPatches_shouldReturnBadRequest() throws Exception {
+        String request = """
+            {
+              "areaSize": [5, 5],
+              "startingPosition": [1, 2],
+              "navigationInstructions": "N"
+            }
+            """;
+
+        mockMvc.perform(post(NAVIGATION_ENDPOINT)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(request))
+            .andExpect(status().isBadRequest());
     }
 }
