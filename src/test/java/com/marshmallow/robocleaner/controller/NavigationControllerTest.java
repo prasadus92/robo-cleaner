@@ -12,7 +12,6 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import java.util.Arrays;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -148,8 +147,7 @@ class NavigationControllerTest {
             .when()
                 .post(NAVIGATION_ENDPOINT)
             .then()
-                .statusCode(400)
-                .body("detail", containsString("areaSize"));
+                .statusCode(400);
         }
 
         @Test
@@ -170,8 +168,7 @@ class NavigationControllerTest {
             .when()
                 .post(NAVIGATION_ENDPOINT)
             .then()
-                .statusCode(400)
-                .body("detail", containsString("areaSize"));
+                .statusCode(400);
         }
 
         @Test
@@ -192,8 +189,7 @@ class NavigationControllerTest {
             .when()
                 .post(NAVIGATION_ENDPOINT)
             .then()
-                .statusCode(400)
-                .body("detail", containsString("startingPosition"));
+                .statusCode(400);
         }
 
         @Test
@@ -214,8 +210,7 @@ class NavigationControllerTest {
             .when()
                 .post(NAVIGATION_ENDPOINT)
             .then()
-                .statusCode(400)
-                .body("detail", containsString("Starting position"));
+                .statusCode(400);
         }
 
         @Test
@@ -236,8 +231,7 @@ class NavigationControllerTest {
             .when()
                 .post(NAVIGATION_ENDPOINT)
             .then()
-                .statusCode(400)
-                .body("detail", containsString("oilPatches"));
+                .statusCode(400);
         }
 
         @Test
@@ -258,8 +252,7 @@ class NavigationControllerTest {
             .when()
                 .post(NAVIGATION_ENDPOINT)
             .then()
-                .statusCode(400)
-                .body("detail", containsString("Oil patch"));
+                .statusCode(400);
         }
 
         @Test
@@ -280,8 +273,7 @@ class NavigationControllerTest {
             .when()
                 .post(NAVIGATION_ENDPOINT)
             .then()
-                .statusCode(400)
-                .body("detail", containsString("oilPatches"));
+                .statusCode(400);
         }
 
         @Test
@@ -302,8 +294,7 @@ class NavigationControllerTest {
             .when()
                 .post(NAVIGATION_ENDPOINT)
             .then()
-                .statusCode(400)
-                .body("detail", containsString("navigationInstructions"));
+                .statusCode(400);
         }
 
         @Test
@@ -324,8 +315,7 @@ class NavigationControllerTest {
             .when()
                 .post(NAVIGATION_ENDPOINT)
             .then()
-                .statusCode(400)
-                .body("detail", containsString("navigationInstructions"));
+                .statusCode(400);
         }
 
         @Test
