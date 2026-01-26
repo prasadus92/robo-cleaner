@@ -1,18 +1,23 @@
 package com.marshmallow.robocleaner.validation;
 
-import javax.validation.Constraint;
-import javax.validation.Payload;
+import jakarta.validation.Constraint;
+import jakarta.validation.Payload;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Target ({ElementType.METHOD, ElementType.FIELD})
-@Retention (RetentionPolicy.RUNTIME)
-@Constraint (validatedBy = OilPatchesValidator.class)
+/**
+ * Validation annotation for oil patches list.
+ * Validates that each oil patch is a valid coordinate pair with non-negative integers.
+ */
+@Target({ElementType.FIELD, ElementType.PARAMETER})
+@Retention(RetentionPolicy.RUNTIME)
+@Constraint(validatedBy = OilPatchesValidator.class)
 public @interface OilPatches {
 
-    String message() default "oilPatches must be a list of X and Y pairs (X >= 0 and Y >= 0)";
+    String message() default "Oil patches must be a non-empty list of [x, y] coordinate pairs where x >= 0 and y >= 0";
 
     Class<?>[] groups() default {};
 
