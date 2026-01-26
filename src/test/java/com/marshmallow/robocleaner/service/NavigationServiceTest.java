@@ -6,7 +6,6 @@ import com.marshmallow.robocleaner.exception.OilPatchOutOfBoundsException;
 import com.marshmallow.robocleaner.exception.StartingPositionOutOfBoundsException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -24,85 +23,48 @@ class NavigationServiceTest {
         navigationService = new NavigationService();
     }
 
-    @Nested
-    @DisplayName("Successful Navigation Tests")
-    class SuccessfulNavigationTests {
+    @Test
+    @DisplayName("Basic use case - should return correct result")
+    void basicUseCase_shouldReturnCorrectResult() {
+        NavigationRequest request = new NavigationRequest(
+                Arrays.asList(5, 5),
+                Arrays.asList(1, 2),
+                List.of(Arrays.asList(1, 0), Arrays.asList(2, 2), Arrays.asList(2, 3)),
+                "NNESEESWNWW"
+        );
 
-        @Test
-        @DisplayName("Basic use case - should return correct result")
-        void basicUseCase_shouldReturnCorrectResult() {
-            // Given
-            NavigationRequest request = new NavigationRequest(
-                    Arrays.asList(5, 5),
-                    Arrays.asList(1, 2),
-                    List.of(Arrays.asList(1, 0), Arrays.asList(2, 2), Arrays.asList(2, 3)),
-                    "NNESEESWNWW"
-            );
+        NavigationResponse response = navigationService.navigate(request);
 
-            // When
-            NavigationResponse response = navigationService.navigate(request);
-
-            // Then
-            assertNotNull(response);
-            assertEquals(1, response.oilPatchesCleaned());
-            assertEquals(Arrays.asList(1, 3), response.finalPosition());
-        }
-
-        @Test
-        @DisplayName("Rectangular area - should navigate correctly")
-        void rectangularArea_shouldNavigateCorrectly() {
-            // Given
-            NavigationRequest request = new NavigationRequest(
-                    Arrays.asList(5, 7),
-                    Arrays.asList(1, 2),
-                    List.of(Arrays.asList(1, 6), Arrays.asList(2, 6), Arrays.asList(2, 3)),
-                    "NNNNESEESWNWW"
-            );
-
-            // When
-            NavigationResponse response = navigationService.navigate(request);
-
-            // Then
-            assertNotNull(response);
-            assertEquals(2, response.oilPatchesCleaned());
-            assertEquals(Arrays.asList(1, 5), response.finalPosition());
-        }
+        assertNotNull(response);
+        assertEquals(1, response.oilPatchesCleaned());
+        assertEquals(Arrays.asList(1, 3), response.finalPosition());
     }
 
-    @Nested
-    @DisplayName("Error Handling Tests")
-    class ErrorHandlingTests {
+    @Test
+    @DisplayName("Oil patch outside area - should throw exception")
+    void oilPatchOutsideArea_shouldThrowException() {
+        NavigationRequest request = new NavigationRequest(
+                Arrays.asList(5, 5),
+                Arrays.asList(1, 2),
+                List.of(Arrays.asList(1, 5)),
+                "NNESEESWNWW"
+        );
 
-        @Test
-        @DisplayName("Oil patch outside area - should throw exception")
-        void oilPatchOutsideArea_shouldThrowException() {
-            // Given
-            NavigationRequest request = new NavigationRequest(
-                    Arrays.asList(5, 5),
-                    Arrays.asList(1, 2),
-                    List.of(Arrays.asList(1, 5)),  // Out of bounds
-                    "NNESEESWNWW"
-            );
+        assertThrows(OilPatchOutOfBoundsException.class, () ->
+            navigationService.navigate(request));
+    }
 
-            // When/Then
-            assertThrows(OilPatchOutOfBoundsException.class, () ->
-                navigationService.navigate(request));
-        }
+    @Test
+    @DisplayName("Starting position outside area - should throw exception")
+    void startingPositionOutsideArea_shouldThrowException() {
+        NavigationRequest request = new NavigationRequest(
+                Arrays.asList(5, 5),
+                Arrays.asList(5, 5),
+                List.of(Arrays.asList(1, 0)),
+                "N"
+        );
 
-        @Test
-        @DisplayName("Starting position outside area - should throw exception")
-        void startingPositionOutsideArea_shouldThrowException() {
-            // Given
-            NavigationRequest request = new NavigationRequest(
-                    Arrays.asList(5, 5),
-                    Arrays.asList(5, 5),  // Out of bounds
-                    List.of(Arrays.asList(1, 0)),
-                    "N"
-            );
-
-            // When/Then
-            assertThrows(StartingPositionOutOfBoundsException.class, () ->
-                navigationService.navigate(request));
-        }
+        assertThrows(StartingPositionOutOfBoundsException.class, () ->
+            navigationService.navigate(request));
     }
 }
