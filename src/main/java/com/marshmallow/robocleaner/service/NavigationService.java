@@ -9,7 +9,6 @@ import com.marshmallow.robocleaner.exception.OilPatchOutOfBoundsException;
 import com.marshmallow.robocleaner.exception.StartingPositionOutOfBoundsException;
 import com.marshmallow.robocleaner.model.Coordinate;
 import com.marshmallow.robocleaner.model.Dimensions;
-import io.micrometer.core.annotation.Timed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -31,7 +30,6 @@ public class NavigationService {
      * @throws StartingPositionOutOfBoundsException if the starting position is outside the area
      * @throws OilPatchOutOfBoundsException        if any oil patch is outside the area
      */
-    @Timed(value = "navigation.execute", description = "Time taken to execute navigation")
     public NavigationResponse navigate(NavigationRequest request) {
         log.info("Processing navigation request: areaSize={}, startingPosition={}, oilPatches={}, instructionsLength={}",
                 request.areaSize(),
